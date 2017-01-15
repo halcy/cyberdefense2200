@@ -10,7 +10,7 @@ Release binaries for windows and 64bit ubuntu can be found on http://halcy.itch.
 Source code (terrible) can be found on https://github.com/halcy/cyberdefense2200 .
 
 Controls are relatively simple and explained in game. The normal mode is fairly hard,
-so an easier mode can be toggle on by pressing "p" on the menu screen.
+so an easier mode can be toggle on by pressing "p" on the menu screen. Cute robot art at the end if you manage to beat it!
 
 Credits:
 * halcy: Code, music, in-game art
