@@ -121,14 +121,14 @@ char* dialog_gamestart[] = {
 char* dialog_ringsstart[] = {
     "_CYBER COMMAND_:\nThat's taken care of! However!\nI fear the worst!",
     "_CYBER COMMAND_:\nQuick, _CYBER CAPTAIN_!\nEnter the _CYBER TOWER_!",
-    "~"
+    "~",
     "_CYBER COMMAND_:\nIt's a calamity!\nThe _CYBER ENEMIES_ have breached\nthe _CYBER TOWER_ and are",
-    "_CYBER COMMAND_:\nattacking the _CYBER RING WORLDS_!\n _CYBER CAPTAIN_! Save us!",
+    "_CYBER COMMAND_:\nattacking the _CYBER RING WORLDS_!\n_CYBER CAPTAIN_! Save us!",
     0
 };
 
 char* dialog_corestart[] = {
-    "_CYBER COMMAND_:\nYou've done it!\nThe _CYBER\nRINGS_ are safe!\nBut it is not over yet!",
+    "_CYBER COMMAND_:\nYou've done it!\nThe _CYBER RINGS_ are safe!\nBut it is not over yet!",
     "~",
     "_CYBER COMMAND_:\nOh no! They've breached the\n_CYBER CORE_!",
     "_CYBER COMMAND_:\nThis is the final stand, _CYBER\nCAPTAIN_!\nIt's all or nothing!",
@@ -537,7 +537,7 @@ void load_level_core() {
     // Maximum enemies for this stage
     stage_enemies_max = 16;
     if(debug_mode) {
-        stage_enemies_max = 2;
+        stage_enemies_max = 4;
     }
 
     // Set all models to no draw
@@ -625,7 +625,7 @@ void load_level_ringworld() {
     // Maximum enemies for this stage
     stage_enemies_max = 8;
     if(debug_mode) {
-        stage_enemies_max = 2;
+        stage_enemies_max = 4;
     }
 
     // Set all models to no draw
@@ -692,7 +692,7 @@ void load_level_city() {
     // Maximum enemies for this stage
     stage_enemies_max = 4;
     if(debug_mode) {
-        stage_enemies_max = 2;
+        stage_enemies_max = 4;
     }
 
     // Set all models to no draw
