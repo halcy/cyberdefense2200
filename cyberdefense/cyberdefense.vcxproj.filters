@@ -36,9 +36,6 @@
     <ClCompile Include="tower.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="timing.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="enemy.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -60,9 +57,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="models.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="timing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

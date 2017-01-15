@@ -120,7 +120,6 @@
     <ClCompile Include="rasterize.c" />
     <ClCompile Include="fixedmath.c" />
     <ClCompile Include="ringworld.c" />
-    <ClCompile Include="timing.c" />
     <ClCompile Include="tower.c" />
   </ItemGroup>
   <ItemGroup>
@@ -128,7 +127,6 @@
     <ClInclude Include="models.h" />
     <ClInclude Include="fixedmath.h" />
     <ClInclude Include="rasterize.h" />
-    <ClInclude Include="timing.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="models\convert-obj.pl" />
