@@ -1,7 +1,7 @@
 /**
- * Cool game
- * TODO: Bugs, many, probably
- */
+* Cool game
+* TODO: Bugs, many, probably
+*/
 
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
@@ -92,15 +92,18 @@ double speed;
 
 int32_t paused;
 int32_t dialog_mode;
+int32_t draw_string_pos;
 int32_t menu_mode;
 int32_t menu_blink;
 int32_t from_menu;
 int32_t transition_state;
 int32_t have_transitioned;
-int32_t debug_mode = 0;
+int32_t difficulty_mode = 0; // 0 - normal, 1 - ez, 2 - hard
 
 HSTREAM music;
 HSTREAM sounds[10];
+int32_t voice_next;
+int32_t voice_beep;
 
 // Text boxies
 char** active_dialog;
@@ -206,7 +209,9 @@ void change_music(const char* path) {
 void start_dialog(char** dialog) {
     dialog_pos = 0;
     dialog_mode = 1;
+    draw_string_pos = 0;
     active_dialog = dialog;
+    voice_next = INT_FIXED(1);
 }
 
 // Draw a single character of text at a given position
@@ -221,7 +226,7 @@ void draw_char(char character, int px, int py, int cyber) {
             if(bitmap[y] & 1 << x) {
                 framebuffer[px + x + (SCREEN_HEIGHT - (py + y)) * SCREEN_WIDTH] = col;
             }
-            
+
         }
     }
 }
@@ -232,29 +237,49 @@ void draw_string(char* string, int px, int py, int dialogy) {
     int pos = 0;
     int pxo = px;
     int first_line = 1;
+    int first_line_len = 1;
+
     while(string[pos] != 0) {
+        if(
+            dialogy && 
+            !first_line && 
+            pos > FIXED_INT(draw_string_pos) + first_line_len && 
+            draw_string_pos >= 0
+            ) { // More hacky than the rest of this
+            return;
+        }
+
         if(string[pos] == '_') {
             cybermode = cybermode == 1 ? 0 : 1;
             pos++;            
             continue;
         }
-        
+
         if(string[pos] == '\n') {
             px = pxo;
-            
+
             if(dialogy == 1 && first_line == 1) {
                 first_line = 0;
                 py += 3;
             }
-            
+
             py += 9;
             pos++;
             continue;
         }
-        
+
+        if(first_line == 1) {
+            first_line_len++;
+        }
+
         draw_char(string[pos], px, py, cybermode);
         px += 8;
         pos++;
+    }
+
+    if(dialogy == 1) {
+        // Drew whole string
+        draw_string_pos = -1;
     }
 }
 
@@ -277,7 +302,7 @@ int32_t ray_tri_intersect(ivec3_t orig, ivec3_t dir, ivec3_t v0, ivec3_t v1, ive
     ivec3_t v0v1 = ivec3sub(v1, v0);
     ivec3_t v0v2 = ivec3sub(v2, v0);
     ivec3_t pvec = ivec3cross(dir, v0v2);
-    
+
     int32_t det = ivec3dot(v0v1, pvec);
 
     if(iabs(det) < FLOAT_FIXED(0.001)) {
@@ -289,7 +314,7 @@ int32_t ray_tri_intersect(ivec3_t orig, ivec3_t dir, ivec3_t v0, ivec3_t v1, ive
     if(u < 0 || u > INT_FIXED(1)) {
         return 0;
     }
-    
+
     ivec3_t qvec = ivec3cross(tvec, v0v1);
     int32_t v = idiv(ivec3dot(dir, qvec), det);
     if(v < 0 || u + v > INT_FIXED(1)) {
@@ -320,13 +345,13 @@ int raytrace(ivec3_t origin_local, ivec3_t dir_local, ivec3_t* hit_pos, int32_t*
         ivec4_t pos_transformed = imat4x4transform(
             imat4x4affineinverse(models[m].modelview), 
             ivec4(origin_local.x, origin_local.y, origin_local.z, INT_FIXED(1))
-        );
+            );
         ivec3_t pos = ivec3(pos_transformed.x, pos_transformed.y, pos_transformed.z);
 
         ivec4_t dir_transformed = imat4x4transform(
             imat4x4affineinverse(models[m].modelview), 
             ivec4(dir_local.x, dir_local.y, dir_local.z, INT_FIXED(0))
-        );
+            );
         ivec3_t dir = ivec3norm(ivec3(dir_transformed.x, dir_transformed.y, dir_transformed.z));
 
         for(int i = 0; i < models[m].num_faces; i++) {
@@ -352,7 +377,7 @@ int raytrace(ivec3_t origin_local, ivec3_t dir_local, ivec3_t* hit_pos, int32_t*
             origin_local.x + imul(t, dir_local.x), 
             origin_local.y + imul(t, dir_local.y), 
             origin_local.z + imul(t, dir_local.z)
-        );
+            );
     }
 
     return hit;
@@ -409,7 +434,7 @@ void enemy_line(ivec3_t enemy, ivec3_t pos, imat4x4_t mvp, int32_t len, uint8_t*
         idiv(enemy_dir_transformed.x, enemy_dir_transformed.w),
         idiv(enemy_dir_transformed.y, enemy_dir_transformed.w),
         FLOAT_FIXED(0.0)
-    ));
+        ));
 
     // too lazy for bresenham
     int32_t aspect = idiv(INT_FIXED(SCREEN_WIDTH), INT_FIXED(SCREEN_HEIGHT));
@@ -468,12 +493,12 @@ void start_wave(int count) {
     // Set wave display active
     wave_show = INT_FIXED(2);
     wave_nb += 1;
-    
+
     // Set all enemies inactive
     for(int i = 0; i < ENEMY_MAX; i++) {
         enemies[i].active = 0;
     }
-    
+
     // Set up enemies
     enemy_count = count;
     enemies_alive = enemy_count;
@@ -536,8 +561,11 @@ void load_level_core() {
 
     // Maximum enemies for this stage
     stage_enemies_max = 16;
-    if(debug_mode) {
-        stage_enemies_max = 4;
+    if(difficulty_mode == 1) {
+        stage_enemies_max = 8;
+    }
+    if(difficulty_mode == 2) {
+        stage_enemies_max = 16;
     }
 
     // Set all models to no draw
@@ -605,7 +633,7 @@ void ringworld_onupdate(double elapsed, double alltime) {
     models[0].modelview = imat4x4mul(
         imat4x4translate(ivec3(INT_FIXED(0), INT_FIXED(95), INT_FIXED(0))),
         imat4x4rotatey(FLOAT_FIXED(alltime * 0.01))
-    );
+        );
 }
 
 // Ring world "on win" function
@@ -624,8 +652,11 @@ void load_level_ringworld() {
 
     // Maximum enemies for this stage
     stage_enemies_max = 8;
-    if(debug_mode) {
+    if(difficulty_mode == 1) {
         stage_enemies_max = 4;
+    }
+    if(difficulty_mode == 2) {
+        stage_enemies_max = 16;
     }
 
     // Set all models to no draw
@@ -691,8 +722,11 @@ void load_level_city() {
 
     // Maximum enemies for this stage
     stage_enemies_max = 4;
-    if(debug_mode) {
+    if(difficulty_mode == 1) {
         stage_enemies_max = 4;
+    }
+    if(difficulty_mode == 2) {
+        stage_enemies_max = 16;
     }
 
     // Set all models to no draw
@@ -937,9 +971,25 @@ void run_game(double elapsed) {
 
     if(keys[' ']) {
         speed += 0.03 * inpscale;
+
+        if(BASS_ChannelIsActive(sounds[6])) {
+            BASS_ChannelStop(sounds[6]);
+        }
+
+        if(!BASS_ChannelIsActive(sounds[7])) {
+            BASS_ChannelPlay(sounds[7], 1);
+        }
     }
     else {
         speed -= 0.03 * inpscale;
+
+        if(BASS_ChannelIsActive(sounds[7])) {
+            BASS_ChannelStop(sounds[7]);
+        }
+
+        if(!BASS_ChannelIsActive(sounds[6])) {
+            BASS_ChannelPlay(sounds[6], 1);
+        }
     }
     speed = speed < 1.0 ? 1.0 : speed;
     speed = speed > 5.0 ? 5.0 : speed;
@@ -1097,6 +1147,9 @@ void run_game(double elapsed) {
     // Display Lock Alert
     if(enemy_lock) {
         draw_string("_TARGET ALERT_", 90 - ssinc, 183, 0);
+        if(!BASS_ChannelIsActive(sounds[5])) {
+            BASS_ChannelPlay(sounds[5], 1);
+        }
     }
 
     // Unshake
@@ -1114,6 +1167,7 @@ void run_game(double elapsed) {
 
     // Dialog mode
     if(dialog_mode == 1) {
+        voice_beep = 0;
         if(active_dialog[dialog_pos] != 0) {
             if(active_dialog[dialog_pos][0] == '*') {
                 menu_mode = 1;
@@ -1131,9 +1185,11 @@ void run_game(double elapsed) {
             }
             else if(active_dialog[dialog_pos][0] == '-') {
                 blit_to_screen(texture_menuimages[4]);
+                draw_string_pos = -1;
             }
             else if(active_dialog[dialog_pos][0] == '+') {
                 blit_to_screen(texture_menuimages[3]);
+                draw_string_pos = -1;
             }
             else if(active_dialog[dialog_pos][0] == '~' && transition_state == 0) {
                 transition_state = FLOAT_FIXED(3.0);
@@ -1141,7 +1197,13 @@ void run_game(double elapsed) {
                 dialog_pos--;
             }
             else {
-                blit_to_screen(texture_menuimages[1]);
+                if(voice_next > 3000) {
+                    blit_to_screen(texture_menuimages[6]);
+                }
+                else {
+                    blit_to_screen(texture_menuimages[1]);
+                }
+                voice_beep = 1;
                 draw_string(active_dialog[dialog_pos], 27, 157, 1);
             }
         }
@@ -1178,6 +1240,18 @@ void main_loop(void) {
         BASS_ChannelPlay(music, 1);
     }
 
+    // Dialog advance
+    if(draw_string_pos >= 0 && transition_state == 0) {
+        draw_string_pos += FLOAT_FIXED(30.0 * elapsed);
+        
+        // Voice
+        if(voice_next <= 0 && dialog_mode == 1 && voice_beep == 1) {
+            voice_next = idiv(INT_FIXED(rand() % 6000 + 3000), INT_FIXED(1000));
+            BASS_ChannelPlay(sounds[(rand() % 3) + 2], 1);
+        }
+        voice_next -= FLOAT_FIXED(30.0 * elapsed);
+    }
+
     // Draw
     if(!menu_mode) {
         run_game(elapsed);
@@ -1188,12 +1262,21 @@ void main_loop(void) {
             menu_blink = FLOAT_FIXED(1.0);
         }
         blit_to_screen(texture_menuimages[2]);
-        if(debug_mode == 1) {
+
+        if(difficulty_mode == 1) {
             draw_string("_easy mode_", 10, 30, 0);
         }
 
+        if(difficulty_mode == 2) {
+            draw_string("_death mode_", 10, 30, 0);
+        }
+
+        if(difficulty_mode == 0) {
+            draw_string("_normal mode_", 10, 30, 0);
+        }
+
         if(menu_blink > FLOAT_FIXED(-0.5)) {
-            draw_string("space to start >", 10, 10, 0);
+            draw_string("space to statrt >", 10, 10, 0);
             draw_string("p to toggle difficulty", 10, 20, 0);
         }
     }
@@ -1229,7 +1312,7 @@ void main_loop(void) {
         if(height != -1) {
             for(int y = SCREEN_HEIGHT - 1; y > SCREEN_HEIGHT - height; y--) {
                 for(int x = 0; x < SCREEN_WIDTH; x++) {
-                    uint8_t pixel = texture_menuimages[5][x + y * SCREEN_WIDTH];
+                    uint8_t pixel = texture_menuimages[5][x + (y + height - SCREEN_HEIGHT) * SCREEN_WIDTH];
                     if(pixel != RGB332(0, 255, 0)) {
                         framebuffer[x + y * SCREEN_WIDTH] = pixel;
                     }
@@ -1273,11 +1356,17 @@ void keyboard(unsigned char key, int x, int y) {
                 paused = 1;
             }
         }
-    break;        
+        break;        
     case ' ':
         if(!transition_state) {
             if(dialog_mode) {
-                dialog_pos++;
+                if(draw_string_pos < INT_FIXED(0)) {
+                    draw_string_pos = 0;
+                    dialog_pos++;
+                }
+                else {
+                    draw_string_pos = -1;
+                }
             }
 
             if(menu_mode) {
@@ -1287,17 +1376,15 @@ void keyboard(unsigned char key, int x, int y) {
                 from_menu = 1;
             }
         }
-    break;
+        break;
     case 'p':
         if(menu_mode) {
-            if(debug_mode == 1) {
-                debug_mode = 0;
-            }
-            else {
-                debug_mode = 1;
+            difficulty_mode++;
+            if(difficulty_mode == 3) {
+                difficulty_mode = 0;
             }
         }
-    break;
+        break;
     default:
         break;
     }
@@ -1311,14 +1398,14 @@ void keyboardup(unsigned char key, int x, int y) {
 // Entry point
 int main(int argc, char **argv) {
 
-/*
+    /*
     // Don't lock to 60hz (nvidia specific)
-#ifdef _WIN32
+    #ifdef _WIN32
     _putenv( (char *) "__GL_SYNC_TO_VBLANK=0" );
-#else    
+    #else    
     putenv( (char *) "__GL_SYNC_TO_VBLANK=0" );
-#endif
-*/
+    #endif
+    */
     // Create a window
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
@@ -1330,7 +1417,7 @@ int main(int argc, char **argv) {
     glutKeyboardUpFunc(keyboardup);
     glutSetCursor(GLUT_CURSOR_NONE); 
     glutIdleFunc(main_loop);
-    
+
     // Sound
     BASS_Init(-1, 44100, 0, 0, 0);
     BASS_Start();
@@ -1341,6 +1428,12 @@ int main(int argc, char **argv) {
 
     sounds[0] = BASS_StreamCreateFile(0, "data/fwup.ogg", 0, 0, BASS_STREAM_PRESCAN);
     sounds[1] = BASS_StreamCreateFile(0, "data/bwoom.ogg", 0, 0, BASS_STREAM_PRESCAN);
+    sounds[2] = BASS_StreamCreateFile(0, "data/voice1.ogg", 0, 0, BASS_STREAM_PRESCAN);
+    sounds[3] = BASS_StreamCreateFile(0, "data/voice2.ogg", 0, 0, BASS_STREAM_PRESCAN);
+    sounds[4] = BASS_StreamCreateFile(0, "data/voice3.ogg", 0, 0, BASS_STREAM_PRESCAN);
+    sounds[5] = BASS_StreamCreateFile(0, "data/alert.ogg", 0, 0, BASS_STREAM_PRESCAN);
+    sounds[6] = BASS_StreamCreateFile(0, "data/enginelow.ogg", 0, 0, BASS_STREAM_PRESCAN);
+    sounds[7] = BASS_StreamCreateFile(0, "data/enginehigh.ogg", 0, 0, BASS_STREAM_PRESCAN);
 
     // Set up projection
     projection = imat4x4perspective(INT_FIXED(45), idiv(INT_FIXED(SCREEN_WIDTH), INT_FIXED(SCREEN_HEIGHT)), ZNEAR, ZFAR);
@@ -1362,6 +1455,7 @@ int main(int argc, char **argv) {
     texture_menuimages[3] = load_texture("data/win.bmp");
     texture_menuimages[4] = load_texture("data/lose.bmp");
     texture_menuimages[5] = load_texture("data/barrier.bmp");
+    texture_menuimages[6] = load_texture("data/textbox2.bmp");
 
     texture_count = 0;
     texture_floor = 0;
@@ -1375,5 +1469,5 @@ int main(int argc, char **argv) {
     lasttime = starttime;
     glutMainLoop();
 
-return 0;
+    return 0;
 }
