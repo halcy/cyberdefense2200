@@ -351,7 +351,7 @@ int raytrace(ivec3_t origin_local, ivec3_t dir_local, ivec3_t* hit_pos, int32_t*
         ivec4_t dir_transformed = imat4x4transform(
             imat4x4affineinverse(models[m].modelview), 
             ivec4(dir_local.x, dir_local.y, dir_local.z, INT_FIXED(0))
-            );
+        );
         ivec3_t dir = ivec3norm(ivec3(dir_transformed.x, dir_transformed.y, dir_transformed.z));
 
         for(int i = 0; i < models[m].num_faces; i++) {
@@ -374,10 +374,10 @@ int raytrace(ivec3_t origin_local, ivec3_t dir_local, ivec3_t* hit_pos, int32_t*
 
     if(hit == 1 && hit_pos != 0) {
         *hit_pos = ivec3(
-            origin_local.x + imul(t, dir_local.x), 
-            origin_local.y + imul(t, dir_local.y), 
-            origin_local.z + imul(t, dir_local.z)
-            );
+            origin_local.x + imul(best_t, dir_local.x), 
+            origin_local.y + imul(best_t, dir_local.y), 
+            origin_local.z + imul(best_t, dir_local.z)
+        );
     }
 
     return hit;
@@ -508,6 +508,13 @@ void start_wave(int count) {
 
         enemies[i].pos = start_point;
         enemies[i].goal = random_reachable_point(enemies[i].pos, enemies[i].model);
+
+        // Randomize start positions a little better
+        for (int j = 0; j < 8; j++) {
+            enemies[i].pos = enemies[i].goal;
+            enemies[i].goal = random_reachable_point(enemies[i].pos, enemies[i].model);
+        }
+
         enemies[i].dir = ivec3norm(ivec3sub(enemies[i].goal, enemies[i].pos));
         enemies[i].scale = FLOAT_FIXED(0.1);
         enemies[i].active = 1;
@@ -1036,7 +1043,8 @@ void run_game(double elapsed) {
             continue;
         }
 
-        // Inverse translate position
+        // Old code: vertex AABB (terrible)
+        /*// Inverse translate position
         ivec4_t pos_transformed = imat4x4transform(
             imat4x4affineinverse(models[m].modelview), 
             ivec4(FLOAT_FIXED(xpos), FLOAT_FIXED(ypos), FLOAT_FIXED(zpos), INT_FIXED(1))
@@ -1050,11 +1058,24 @@ void run_game(double elapsed) {
             dot = max(dot, iabs(diff.y));
             dot = max(dot, iabs(diff.z));
             best_dot = min(dot, best_dot);
+        }*/
+
+        // Do a ray trace to the front ("nose"). If it hits anything close, collide.
+        // This means the ship is infinitely thin, But That's Okay.
+        ivec3_t hit_pos;
+        ivec3_t nose_dir = ivec3norm(ivec3sub(lookat, eye));
+        ivec3_t ship_pos = ivec3sub(eye, ivec3mul(nose_dir, INT_FIXED(1)));
+        int32_t hit_nose = raytrace(ship_pos, nose_dir, &hit_pos, 0, -1);
+        int32_t hit_dot = INT_FIXED(100000);
+        if(hit_nose) {
+            ivec3_t hit_vec = ivec3sub(hit_pos, ship_pos);
+            hit_dot = ivec3dot(hit_vec, hit_vec);
         }
+        best_dot = min(best_dot, hit_dot);
     }
 
     // Are we colliding?
-    if(best_dot < FLOAT_FIXED(1.5) || !point_in_arena(eye)) {
+    if(best_dot < FLOAT_FIXED(10.0) || !point_in_arena(eye)) {
         player_health -= 1;
         xpos = 50;
         ypos = 50;
