@@ -851,8 +851,17 @@ void run_game(double elapsed) {
         enemies[i].pos = ivec3add(enemies[i].pos, ivec3mul(enemies[i].dir, FLOAT_FIXED(elapsed * 20.0)));
         ivec3_t diff = ivec3sub(enemies[i].pos, enemies[i].goal);
 
+        // Clip check
+        int32_t still_reachable = !raytrace(
+            enemies[i].pos, 
+            ivec3sub(enemies[i].goal, enemies[i].pos), 
+            0, 
+            0, 
+            enemies[i].model
+        );
+
         // Change direction
-        if(ivec3dot(diff, enemies[i].dir) > FLOAT_FIXED(0.0)) {
+        if(ivec3dot(diff, enemies[i].dir) > FLOAT_FIXED(0.0) || !still_reachable) {
             // Potentially change mode
             if(!enemies[i].charging && ((rand() % 100) > 30)) {
                 enemies[i].charging = 1;
