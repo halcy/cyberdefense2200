@@ -11,11 +11,16 @@
 #include <windows.h>
 #endif
 
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <GLUT/glut.h>
+#endif
+
+#ifndef __APPLE__
+#include "glext.h"
 #include <GL/gl.h>
 #include <GL/glut.h>
-
-#ifdef _WIN32
-#include "glext.h"
 #endif
 
 #define max(a, b) ((a)>(b)?(a):(b))
@@ -35,7 +40,7 @@
 
 #include "text/font8x8_basic.h"
 
-#include <bass.h>
+#include "bass/bass.h"
 
 uint8_t cyber_cols[8] = {
     RGB332(255, 71,  254),
@@ -1441,6 +1446,7 @@ int main(int argc, char **argv) {
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
     glutInitWindowSize(SCREEN_WIDTH * ZOOM_LEVEL, SCREEN_HEIGHT * ZOOM_LEVEL);
     glutCreateWindow("CYBER DEFENSE 2200");
+    glutDisplayFunc(reshape);
     glutReshapeFunc(reshape);
     glutIgnoreKeyRepeat (1);
     glutKeyboardFunc(keyboard);

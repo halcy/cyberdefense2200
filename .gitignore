@@ -1,0 +1,4 @@
+.DS_Store
+*.o
+cyberdefense/cyberdefense
+cyberdefense/libbass.dylib
