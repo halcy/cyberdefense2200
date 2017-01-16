@@ -1,4 +1,4 @@
-CXXFLAGS= \
+WINCFLAGS= \
 	-ffast-math \
 	-O3 \
 	-std=gnu11 \
@@ -44,10 +44,10 @@ OBJECTS=cityscape2.o \
 	main.o
 	
 all: $(OBJECTS)
-	gcc $(OBJECTS) $(CXXFLAGS) -Lbass -lbass -lm -lGL -lglut -lGLU -o cyberdefense
+	gcc $(OBJECTS) $(WINCFLAGS) -Lbass -lbass -lm -lGL -lglut -lGLU -o cyberdefense
 	
 mac: $(OBJECTS)
-	gcc $(OBJECTS) $(MACCFLAGS) -Lbass -lbass -lm -framework GLUT -framework OpenGL -framework Cocoa -o cyberdefense
+	gcc $(OBJECTS) $(MACCFLAGS) -Lbass -lbass -lm -framework GLUT -framework OpenGL -o cyberdefense
 
 clean:
 	rm -r *.o
