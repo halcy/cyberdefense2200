@@ -1263,8 +1263,21 @@ void run_game(double elapsed) {
     }
 }
 
+// Reshape works only sometimes. I'm mad about this.
+void display_reshape() {
+    if(
+        glutGet(GLUT_WINDOW_WIDTH) != SCREEN_WIDTH * zoom_level ||
+        glutGet(GLUT_WINDOW_WIDTH) != SCREEN_HEIGHT * zoom_level
+    ) {
+        glutReshapeWindow(SCREEN_WIDTH * zoom_level, SCREEN_HEIGHT * zoom_level);
+    }
+}
+
 // Update function
 void main_loop(void) {
+    // Try reshape
+    display_reshape();
+    
     // Timing
     double thistime = nanotime();
     double elapsed = thistime - lasttime;
@@ -1374,17 +1387,8 @@ void main_loop(void) {
 
 // Resizable window (does not affect actual drawing)
 void reshape(GLsizei w, GLsizei h) {
+    display_reshape();
     glViewport(0, 0, w, h);
-}
-
-// Reshape works only from display (a mystery)
-void display_reshape() {
-    if(
-        glutGet(GLUT_WINDOW_WIDTH) != SCREEN_WIDTH * zoom_level ||
-        glutGet(GLUT_WINDOW_WIDTH) != SCREEN_HEIGHT * zoom_level
-    ) {
-        glutReshapeWindow(SCREEN_WIDTH * zoom_level, SCREEN_HEIGHT * zoom_level);
-    }
 }
 
 // Glut input: key down
