@@ -1435,6 +1435,7 @@ void keyboard(unsigned char key, int x, int y) {
         if(zoom_level == 0) {
             zoom_level = 6;
         }
+        glutReshapeWindow(SCREEN_WIDTH * zoom_level, SCREEN_HEIGHT * zoom_level);
     break;
     default:
         break;
