@@ -21,7 +21,7 @@
 #define max(a, b) ((a)>(b)?(a):(b))
 #define min(a, b) ((a)<(b)?(a):(b))
 
-#define ZOOM_LEVEL 4
+int32_t zoom_level = 4;
 #define MAX_CHARGE (FLOAT_FIXED(0.1))
 
 #include <stdio.h>
@@ -1306,7 +1306,7 @@ void main_loop(void) {
         }
 
         if(menu_blink > FLOAT_FIXED(-0.5)) {
-            draw_string("space to statrt >", 10, 10, 0);
+            draw_string("space to start >", 10, 10, 0);
             draw_string("p to toggle difficulty", 10, 20, 0);
         }
     }
@@ -1355,7 +1355,7 @@ void main_loop(void) {
     }
 
     // Buffer to screen
-    glPixelZoom(ZOOM_LEVEL, ZOOM_LEVEL);
+    glPixelZoom(zoom_level, zoom_level);
     glDrawPixels(SCREEN_WIDTH, SCREEN_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE_3_3_2, framebuffer);
     glutSwapBuffers();
 
@@ -1368,8 +1368,18 @@ void main_loop(void) {
 }
 
 // Resizable window (does not affect actual drawing)
-void reshape(int w, int h) {
+void reshape(GLsizei w, GLsizei h) {
     glViewport(0, 0, w, h);
+}
+
+// Reshape works only from display (a mystery)
+void display_reshape() {
+    if(
+        glutGet(GLUT_WINDOW_WIDTH) != SCREEN_WIDTH * zoom_level ||
+        glutGet(GLUT_WINDOW_WIDTH) != SCREEN_HEIGHT * zoom_level
+    ) {
+        glutReshapeWindow(SCREEN_WIDTH * zoom_level, SCREEN_HEIGHT * zoom_level);
+    }
 }
 
 // Glut input: key down
@@ -1415,6 +1425,12 @@ void keyboard(unsigned char key, int x, int y) {
             }
         }
         break;
+    case 'o':
+        zoom_level--;
+        if(zoom_level == 0) {
+            zoom_level = 6;
+        }
+    break;
     default:
         break;
     }
@@ -1439,10 +1455,11 @@ int main(int argc, char **argv) {
     // Create a window
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-    glutInitWindowSize(SCREEN_WIDTH * ZOOM_LEVEL, SCREEN_HEIGHT * ZOOM_LEVEL);
+    glutInitWindowSize(SCREEN_WIDTH * zoom_level, SCREEN_HEIGHT * zoom_level);
     glutCreateWindow("CYBER DEFENSE 2200");
+    glutDisplayFunc(display_reshape);
     glutReshapeFunc(reshape);
-    glutIgnoreKeyRepeat (1);
+    glutIgnoreKeyRepeat(1);
     glutKeyboardFunc(keyboard);
     glutKeyboardUpFunc(keyboardup);
     glutSetCursor(GLUT_CURSOR_NONE); 
