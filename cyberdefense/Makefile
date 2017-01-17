@@ -1,4 +1,4 @@
-WINCFLAGS= \
+CFLAGS= \
 	-ffast-math \
 	-O3 \
 	-std=gnu11 \
