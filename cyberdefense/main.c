@@ -11,10 +11,15 @@
 #include <windows.h>
 #endif
 
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <GLUT/glut.h>
+#endif
+
+#ifndef __APPLE__
 #include <GL/gl.h>
 #include <GL/glut.h>
-
-#ifdef _WIN32
 #include "glext.h"
 #endif
 
@@ -35,7 +40,7 @@ int32_t zoom_level = 4;
 
 #include "text/font8x8_basic.h"
 
-#include <bass.h>
+#include "bass/bass.h"
 
 uint8_t cyber_cols[8] = {
     RGB332(255, 71,  254),
