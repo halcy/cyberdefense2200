@@ -18,7 +18,6 @@ CFLAGS= \
 	-fsel-sched-pipelining \
 	-funsafe-math-optimizations \
 	-funsafe-loop-optimizations \
-	-funroll-all-loops \
 	-masm=intel -m3dnow -mtune=core2 \
 	-Ibass 	
 

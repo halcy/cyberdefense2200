@@ -574,7 +574,7 @@ void load_level_core() {
     // Maximum enemies for this stage
     stage_enemies_max = 16;
     if(difficulty_mode == 1) {
-        stage_enemies_max = 8;
+        stage_enemies_max = 4;
     }
     if(difficulty_mode == 2) {
         stage_enemies_max = 16;
@@ -1041,7 +1041,7 @@ void run_game(double elapsed) {
     // Draw models to screen buffer
     rasterize(framebuffer, models, num_models, camera, projection, texture_floor, sky_color);
 
-    // Collide ship TODO this is bad
+    // Collide ship
     int32_t best_dot = INT_FIXED(2000);
     for(int m = 0; m < num_models; m++) {
         if(models[m].draw == 0) {
